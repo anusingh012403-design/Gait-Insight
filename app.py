@@ -10,33 +10,62 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------- SIDEBAR NAVIGATION ----------
-st.sidebar.title("🧠 Clinical Gait App")
+# ---------- PREMIUM MEDICAL CSS ----------
+st.markdown("""
+<style>
+body {
+    background-color:#0f172a;
+    color:white;
+}
+
+.main {
+    background-color:#0f172a;
+}
+
+.metric-container {
+    background: #1e293b;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0px 4px 12px rgba(0,0,0,0.4);
+    transition:0.3s;
+}
+
+.metric-container:hover {
+    transform:scale(1.05);
+}
+
+h1, h2, h3 {
+    color:#38bdf8;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------- SIDEBAR ----------
+st.sidebar.title("🧠 Clinical System")
 
 page = st.sidebar.radio(
     "Navigation",
     ["🏠 Home", "📊 Analysis", "🧾 Clinical Report"]
 )
 
-# ---------- HOME PAGE ----------
+# ---------- HOME ----------
 if page == "🏠 Home":
 
-    st.title("🚶 Reverse Walking Clinical Analysis System")
+    st.title("🚶 Reverse Walking Clinical Analysis")
 
     st.markdown("""
-    ### Advanced Biomedical Application
+### Ultra Premium Biomedical Dashboard
 
-    Upload gait data and get automatic clinical analysis.
+Upload gait reports and get automatic clinical analysis.
 
-    Features:
+Features:
 
-    ✅ Multi-subject comparison  
-    ✅ Interactive graphs  
-    ✅ Radar biomechanical analysis  
-    ✅ Automatic clinical report generation
-    """)
+- AI-style clinical report
+- Radar biomechanical analysis
+- Professional medical UI
+""")
 
-# ---------- ANALYSIS PAGE ----------
+# ---------- ANALYSIS ----------
 elif page == "📊 Analysis":
 
     st.title("📊 Clinical Analysis Dashboard")
@@ -49,56 +78,64 @@ elif page == "📊 Analysis":
 
         st.session_state["data"] = data
 
-        st.subheader("📄 Uploaded Data")
+        st.subheader("📄 Dataset Preview")
         st.dataframe(data)
 
         parameters = [col for col in data.columns if col != "subject"]
 
-        # METRIC CARDS
-        st.subheader("📌 Key Metrics")
+        # ---------- METRIC CARDS ----------
+        st.subheader("📌 Clinical Metrics")
 
         cols = st.columns(len(parameters))
 
         for i,param in enumerate(parameters):
-            cols[i].metric(param, round(data[param].mean(),2))
 
-        # BAR GRAPH
-        st.subheader("📊 Multi-Parameter Comparison")
+            with cols[i]:
+                st.markdown(f"""
+                <div class="metric-container">
+                <h3>📌 {param}</h3>
+                <h2>{round(data[param].mean(),2)}</h2>
+                </div>
+                """, unsafe_allow_html=True)
 
-        fig, ax = plt.subplots()
+        # ---------- TABS ----------
+        tab1, tab2 = st.tabs(["📊 Comparison", "🕸 Radar"])
 
-        for i in range(len(data)):
-            values = data.loc[i, parameters]
-            ax.bar(parameters, values, alpha=0.5, label=data.loc[i,"subject"])
+        with tab1:
 
-        ax.legend()
-        plt.xticks(rotation=45)
+            fig, ax = plt.subplots()
 
-        st.pyplot(fig)
+            for i in range(len(data)):
+                values = data.loc[i, parameters]
+                ax.bar(parameters, values, alpha=0.6, label=data.loc[i,"subject"])
 
-        # RADAR GRAPH
-        st.subheader("🕸 Radar Biomechanical Visualization")
+            ax.legend()
+            plt.xticks(rotation=45)
 
-        angles = np.linspace(0, 2*np.pi, len(parameters), endpoint=False)
+            st.pyplot(fig)
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111, polar=True)
+        with tab2:
 
-        for i in range(len(data)):
+            angles = np.linspace(0, 2*np.pi, len(parameters), endpoint=False)
 
-            values = data.loc[i, parameters].tolist()
-            values += values[:1]
-            ang = np.concatenate((angles, [angles[0]]))
+            fig = plt.figure()
+            ax = fig.add_subplot(111, polar=True)
 
-            ax.plot(ang, values, label=data.loc[i,"subject"])
+            for i in range(len(data)):
 
-        ax.set_xticks(angles)
-        ax.set_xticklabels(parameters)
-        ax.legend()
+                values = data.loc[i, parameters].tolist()
+                values += values[:1]
+                ang = np.concatenate((angles, [angles[0]]))
 
-        st.pyplot(fig)
+                ax.plot(ang, values, label=data.loc[i,"subject"])
 
-# ---------- REPORT PAGE ----------
+            ax.set_xticks(angles)
+            ax.set_xticklabels(parameters)
+            ax.legend()
+
+            st.pyplot(fig)
+
+# ---------- CLINICAL REPORT ----------
 elif page == "🧾 Clinical Report":
 
     st.title("🧾 Automatic Clinical Report")
@@ -109,18 +146,18 @@ elif page == "🧾 Clinical Report":
 
         for i in range(len(data)):
 
-            st.markdown(f"## Patient: {data.loc[i,'subject']}")
+            st.markdown(f"## 👤 {data.loc[i,'subject']}")
 
             if data.loc[i,"walking_speed"] < 0.7:
-                st.warning("⚠ Reduced walking speed detected")
+                st.error("🔴 Reduced walking speed")
 
             if data.loc[i,"stride_length"] < 1.0:
-                st.warning("⚠ Reduced stride length")
+                st.warning("🟡 Reduced stride length")
 
             if data.loc[i,"cadence"] > 120:
-                st.warning("⚠ High cadence compensation")
+                st.info("🔵 High cadence compensation")
 
-            st.success("Analysis completed.")
+            st.success("🟢 Clinical analysis complete")
 
     else:
-        st.info("Upload data first from Analysis page.")
+        st.info("Upload data from Analysis page first.")
