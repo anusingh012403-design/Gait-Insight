@@ -3,117 +3,124 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-# ---------- PAGE SETTINGS ----------
+# ---------- PAGE CONFIG ----------
 st.set_page_config(
-    page_title="Clinical Gait Dashboard",
+    page_title="Clinical Gait Analyzer",
+    page_icon="🧠",
     layout="wide"
 )
 
-# ---------- SIDEBAR ----------
+# ---------- SIDEBAR NAVIGATION ----------
 st.sidebar.title("🧠 Clinical Gait App")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["🏠 Home", "📊 Clinical Dashboard"]
+    ["🏠 Home", "📊 Analysis", "🧾 Clinical Report"]
 )
 
 # ---------- HOME PAGE ----------
 if page == "🏠 Home":
 
-    st.title("🚶 Reverse Walking Clinical Analysis")
+    st.title("🚶 Reverse Walking Clinical Analysis System")
 
-    st.write("""
-    This professional clinical dashboard analyzes reverse walking gait parameters.
+    st.markdown("""
+    ### Advanced Biomedical Application
+
+    Upload gait data and get automatic clinical analysis.
 
     Features:
-    - Multi-subject comparison
-    - Clinical metrics overview
-    - Radar gait visualization
-    - Automatic clinical interpretation
+
+    ✅ Multi-subject comparison  
+    ✅ Interactive graphs  
+    ✅ Radar biomechanical analysis  
+    ✅ Automatic clinical report generation
     """)
 
-# ---------- DASHBOARD ----------
-elif page == "📊 Clinical Dashboard":
+# ---------- ANALYSIS PAGE ----------
+elif page == "📊 Analysis":
 
-    st.title("📊 Clinical Gait Dashboard")
+    st.title("📊 Clinical Analysis Dashboard")
 
-    file = st.file_uploader("📁 Upload Reverse Walking CSV")
+    file = st.file_uploader("Upload Reverse Walking CSV")
 
     if file:
 
         data = pd.read_csv(file)
 
-        st.subheader("👀 Uploaded Data")
+        st.session_state["data"] = data
+
+        st.subheader("📄 Uploaded Data")
         st.dataframe(data)
 
-        # Auto detect parameters
         parameters = [col for col in data.columns if col != "subject"]
 
-        subjects = data["subject"]
-
-        # ---------- METRIC CARDS ----------
-        st.subheader("🩺 Clinical Metrics Overview")
+        # METRIC CARDS
+        st.subheader("📌 Key Metrics")
 
         cols = st.columns(len(parameters))
 
-        for i, param in enumerate(parameters):
-            avg_value = data[param].mean()
-            cols[i].metric(f"📌 {param}", round(avg_value,2))
+        for i,param in enumerate(parameters):
+            cols[i].metric(param, round(data[param].mean(),2))
 
-        # ---------- TABS ----------
-        tab1, tab2, tab3 = st.tabs(["📊 Graph View", "🕸 Radar Analysis", "🧾 Clinical Report"])
+        # BAR GRAPH
+        st.subheader("📊 Multi-Parameter Comparison")
 
-        # ---------- BAR GRAPH ----------
-        with tab1:
+        fig, ax = plt.subplots()
 
-            st.subheader("Multi-Parameter Comparison")
+        for i in range(len(data)):
+            values = data.loc[i, parameters]
+            ax.bar(parameters, values, alpha=0.5, label=data.loc[i,"subject"])
 
-            fig, ax = plt.subplots()
+        ax.legend()
+        plt.xticks(rotation=45)
 
-            x = range(len(parameters))
+        st.pyplot(fig)
 
-            for i, subject in enumerate(subjects):
-                values = data.loc[i, parameters]
-                ax.bar([p + i*0.3 for p in x], values, width=0.3, label=subject)
+        # RADAR GRAPH
+        st.subheader("🕸 Radar Biomechanical Visualization")
 
-            ax.set_xticks(list(x))
-            ax.set_xticklabels(parameters, rotation=45)
+        angles = np.linspace(0, 2*np.pi, len(parameters), endpoint=False)
 
-            ax.legend()
+        fig = plt.figure()
+        ax = fig.add_subplot(111, polar=True)
 
-            st.pyplot(fig)
+        for i in range(len(data)):
 
-        # ---------- RADAR CHART ----------
-        with tab2:
+            values = data.loc[i, parameters].tolist()
+            values += values[:1]
+            ang = np.concatenate((angles, [angles[0]]))
 
-            st.subheader("Radar Gait Analysis")
+            ax.plot(ang, values, label=data.loc[i,"subject"])
 
-            angles = np.linspace(0, 2*np.pi, len(parameters), endpoint=False)
+        ax.set_xticks(angles)
+        ax.set_xticklabels(parameters)
+        ax.legend()
 
-            fig = plt.figure()
-            ax = fig.add_subplot(111, polar=True)
+        st.pyplot(fig)
 
-            for i, subject in enumerate(subjects):
-                values = data.loc[i, parameters].tolist()
-                values += values[:1]
-                ang = np.concatenate((angles, [angles[0]]))
+# ---------- REPORT PAGE ----------
+elif page == "🧾 Clinical Report":
 
-                ax.plot(ang, values, label=subject)
+    st.title("🧾 Automatic Clinical Report")
 
-            ax.set_xticks(angles)
-            ax.set_xticklabels(parameters)
+    if "data" in st.session_state:
 
-            ax.legend()
+        data = st.session_state["data"]
 
-            st.pyplot(fig)
+        for i in range(len(data)):
 
-        # ---------- CLINICAL REPORT ----------
-        with tab3:
+            st.markdown(f"## Patient: {data.loc[i,'subject']}")
 
-            st.subheader("Automatic Clinical Interpretation")
+            if data.loc[i,"walking_speed"] < 0.7:
+                st.warning("⚠ Reduced walking speed detected")
 
-            for param in parameters:
-                if data[param].iloc[0] > data[param].iloc[1]:
-                    st.write(f"🔍 Subject {subjects.iloc[0]} shows higher {param}.")
-                else:
-                    st.write(f"🔍 Subject {subjects.iloc[1]} shows higher {param}.")
+            if data.loc[i,"stride_length"] < 1.0:
+                st.warning("⚠ Reduced stride length")
+
+            if data.loc[i,"cadence"] > 120:
+                st.warning("⚠ High cadence compensation")
+
+            st.success("Analysis completed.")
+
+    else:
+        st.info("Upload data first from Analysis page.")
