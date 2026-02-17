@@ -2,91 +2,63 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
-# -------- PAGE CONFIG --------
+# ---------- PAGE CONFIG ----------
 st.set_page_config(
     page_title="Clinical Reverse Walking App",
     page_icon="🧠",
     layout="wide"
 )
 
-# -------- SIDEBAR --------
-st.sidebar.title("🧠 Clinical Gait App")
+# ---------- SIDEBAR ----------
+st.sidebar.title("🧠 Clinical Gait System")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["🏠 Home","📊 Analysis","📈 Visualization"]
+    ["🏠 Home","📥 Upload & Analysis","📊 Visualization","📡 Live Monitoring","🧾 Clinical Report"]
 )
 
-# =================================================
+# =====================================================
 # HOME PAGE
-# =================================================
+# =====================================================
 
 if page=="🏠 Home":
 
-    st.title("🚶 Reverse Walking Clinical Analysis")
-
-    st.subheader("Ultra Premium Biomedical Dashboard")
+    st.title("🚶 Reverse Walking Clinical Analysis System")
 
     st.write("""
-    Upload reverse walking gait reports and receive automated clinical analysis.
+    Professional biomedical application for gait analysis.
+    Upload patient gait reports to generate automatic analysis.
     """)
 
-    st.markdown("""
-    ### Features
+# =====================================================
+# UPLOAD & ANALYSIS
+# =====================================================
 
-    ✅ Multi-subject comparison  
-    ✅ Clinical metrics overview  
-    ✅ Radar biomechanical visualization  
-    ✅ Automatic clinical interpretation  
-    """)
+elif page=="📥 Upload & Analysis":
 
-# =================================================
-# ANALYSIS PAGE
-# =================================================
+    st.title("📥 Upload Patient Data")
 
-elif page=="📊 Analysis":
+    file = st.file_uploader("Upload CSV")
 
-    st.title("📊 Clinical Gait Parameter Analysis")
+    if file:
 
-    uploaded_file = st.file_uploader("Upload Reverse Walking CSV")
-
-    if uploaded_file:
-
-        data = pd.read_csv(uploaded_file)
+        data = pd.read_csv(file)
 
         st.session_state["data"] = data
 
-        st.subheader("Uploaded Data")
+        st.success("Data uploaded successfully")
+
         st.dataframe(data)
 
-        # -------- Clinical Interpretation --------
+# =====================================================
+# VISUALIZATION
+# =====================================================
 
-        st.subheader("🧠 Clinical Report")
+elif page=="📊 Visualization":
 
-        report=""
-
-        if "walking_speed" in data.columns:
-            avg_speed = data["walking_speed"].mean()
-
-            if avg_speed < 0.7:
-                report+="⚠ Slow walking speed detected.\n"
-            else:
-                report+="✅ Walking speed within functional range.\n"
-
-        if "stride_length" in data.columns:
-            if data["stride_length"].mean()<1:
-                report+="⚠ Reduced stride length.\n"
-
-        st.success(report)
-
-# =================================================
-# VISUALIZATION PAGE (ADVANCED)
-# =================================================
-
-elif page=="📈 Visualization":
-
-    st.title("📈 Advanced Biomechanical Visualization")
+    st.title("📊 Advanced Visualization")
 
     if "data" in st.session_state:
 
@@ -94,43 +66,24 @@ elif page=="📈 Visualization":
 
         parameters = [c for c in data.columns if c!="subject"]
 
-        # PARAMETER SELECTOR
-        selected_param = st.selectbox(
-            "Select parameter",
-            parameters
-        )
-
-        # BAR GRAPH
-        st.subheader("Multi Subject Comparison")
+        selected = st.selectbox("Select Parameter", parameters)
 
         fig, ax = plt.subplots()
-        ax.bar(data["subject"], data[selected_param])
-        ax.set_ylabel(selected_param)
-        st.pyplot(fig)
 
-        # THRESHOLD LINE GRAPH
-        st.subheader("Clinical Threshold View")
-
-        fig, ax = plt.subplots()
-        ax.plot(data["subject"], data[selected_param], marker='o')
-
-        threshold = data[selected_param].mean()
-        ax.axhline(threshold, linestyle='--')
+        ax.bar(data["subject"], data[selected])
 
         st.pyplot(fig)
 
-        # RADAR PLOT
-        st.subheader("Radar Biomechanical Profile")
-
+        # Radar
         angles = np.linspace(0,2*np.pi,len(parameters),endpoint=False)
 
         fig = plt.figure()
         ax = fig.add_subplot(111, polar=True)
 
         for i in range(len(data)):
-            values=data.loc[i,parameters].tolist()
-            values+=values[:1]
-            ang=np.concatenate((angles,[angles[0]]))
+            values = data.loc[i,parameters].tolist()
+            values += values[:1]
+            ang = np.concatenate((angles,[angles[0]]))
 
             ax.plot(ang,values,label=data.loc[i,"subject"])
 
@@ -140,27 +93,46 @@ elif page=="📈 Visualization":
 
         st.pyplot(fig)
 
-        # BOXPLOT
-        st.subheader("Distribution Analysis")
+# =====================================================
+# LIVE MONITORING
+# =====================================================
 
-        fig, ax = plt.subplots()
-        data[parameters].boxplot(ax=ax)
-        st.pyplot(fig)
+elif page=="📡 Live Monitoring":
 
-        # CORRELATION HEATMAP
-        st.subheader("Correlation Heatmap")
+    st.title("📡 Live Gait Monitoring (Simulation)")
 
-        corr=data[parameters].corr()
+    chart = st.line_chart(np.random.randn(10,1))
 
-        fig, ax = plt.subplots()
-        cax=ax.matshow(corr)
+    for i in range(30):
 
-        plt.xticks(range(len(parameters)),parameters,rotation=90)
-        plt.yticks(range(len(parameters)),parameters)
+        new_data = np.random.randn(1,1)
+        chart.add_rows(new_data)
+        time.sleep(0.2)
 
-        fig.colorbar(cax)
+# =====================================================
+# CLINICAL REPORT
+# =====================================================
 
-        st.pyplot(fig)
+elif page=="🧾 Clinical Report":
+
+    st.title("🧾 Automatic Clinical Report")
+
+    if "data" in st.session_state:
+
+        data = st.session_state["data"]
+
+        for i in range(len(data)):
+
+            st.subheader(f"Patient: {data.loc[i,'subject']}")
+
+            if "walking_speed" in data.columns and data.loc[i,"walking_speed"]<0.7:
+                st.error("Reduced walking speed detected")
+
+            if "stride_length" in data.columns and data.loc[i,"stride_length"]<1:
+                st.warning("Short stride length observed")
+
+            st.success("Analysis completed")
 
     else:
-        st.warning("Upload data first in Analysis page.")
+
+        st.warning("Upload data first.")
