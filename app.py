@@ -2,14 +2,14 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# -------- PAGE NAVIGATION --------
+# ---------- PAGE NAVIGATION ----------
 
 page = st.sidebar.selectbox(
     "Navigation",
     ["Home", "Clinical Dashboard"]
 )
 
-# -------- HOME PAGE --------
+# ---------- HOME PAGE ----------
 
 if page == "Home":
 
@@ -18,15 +18,15 @@ if page == "Home":
     st.subheader("Biomechanical Gait Analysis Application")
 
     st.write("""
-    This clinical web application analyzes multiple gait parameters.
-    Upload forward and reverse walking datasets to compare clinical metrics.
+    This clinical web application analyzes reverse walking gait parameters.
+    Upload reverse walking datasets of multiple subjects to compare clinical metrics.
     """)
 
-# -------- CLINICAL DASHBOARD --------
+# ---------- CLINICAL DASHBOARD ----------
 
 elif page == "Clinical Dashboard":
 
-       st.title("Reverse Walking Subject Comparison")
+    st.title("Reverse Walking Subject Comparison")
 
     file = st.file_uploader("Upload Reverse Walking CSV")
 
@@ -37,6 +37,7 @@ elif page == "Clinical Dashboard":
         st.subheader("Uploaded Data")
         st.dataframe(data)
 
+        # PARAMETERS (change names if your CSV has different column names)
         parameters = [
             "walking_speed",
             "cadence",
@@ -45,6 +46,8 @@ elif page == "Clinical Dashboard":
         ]
 
         subjects = data["subject"]
+
+        st.subheader("Multi-Parameter Clinical Comparison")
 
         fig, ax = plt.subplots()
 
