@@ -37,13 +37,8 @@ elif page == "Clinical Dashboard":
         st.subheader("Uploaded Data")
         st.dataframe(data)
 
-        # PARAMETERS (change names if your CSV has different column names)
-        parameters = [
-            "walking_speed",
-            "stride_lenght",
-            "cadence",
-            "hip_rom"
-        ]
+        # Automatically detect parameters (all columns except subject)
+        parameters = [col for col in data.columns if col != "subject"]
 
         subjects = data["subject"]
 
@@ -57,8 +52,8 @@ elif page == "Clinical Dashboard":
             values = data.loc[i, parameters]
             ax.bar([p + i*0.3 for p in x], values, width=0.3, label=subject)
 
-        ax.set_xticks(x)
-        ax.set_xticklabels(parameters)
+        ax.set_xticks(list(x))
+        ax.set_xticklabels(parameters, rotation=45)
 
         ax.legend()
 
