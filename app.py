@@ -1,60 +1,119 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
-# ---------- PAGE NAVIGATION ----------
+# ---------- PAGE SETTINGS ----------
+st.set_page_config(
+    page_title="Clinical Gait Dashboard",
+    layout="wide"
+)
 
-page = st.sidebar.selectbox(
+# ---------- SIDEBAR ----------
+st.sidebar.title("🧠 Clinical Gait App")
+
+page = st.sidebar.radio(
     "Navigation",
-    ["Home", "Clinical Dashboard"]
+    ["🏠 Home", "📊 Clinical Dashboard"]
 )
 
 # ---------- HOME PAGE ----------
+if page == "🏠 Home":
 
-if page == "Home":
-
-    st.title("Clinical Reverse Walking Analysis System")
-
-    st.subheader("Biomechanical Gait Analysis Application")
+    st.title("🚶 Reverse Walking Clinical Analysis")
 
     st.write("""
-    This clinical web application analyzes reverse walking gait parameters.
-    Upload reverse walking datasets of multiple subjects to compare clinical metrics.
+    This professional clinical dashboard analyzes reverse walking gait parameters.
+
+    Features:
+    - Multi-subject comparison
+    - Clinical metrics overview
+    - Radar gait visualization
+    - Automatic clinical interpretation
     """)
 
-# ---------- CLINICAL DASHBOARD ----------
+# ---------- DASHBOARD ----------
+elif page == "📊 Clinical Dashboard":
 
-elif page == "Clinical Dashboard":
+    st.title("📊 Clinical Gait Dashboard")
 
-    st.title("Reverse Walking Subject Comparison")
-
-    file = st.file_uploader("Upload Reverse Walking CSV")
+    file = st.file_uploader("📁 Upload Reverse Walking CSV")
 
     if file:
 
         data = pd.read_csv(file)
 
-        st.subheader("Uploaded Data")
+        st.subheader("👀 Uploaded Data")
         st.dataframe(data)
 
-        # Automatically detect parameters (all columns except subject)
+        # Auto detect parameters
         parameters = [col for col in data.columns if col != "subject"]
 
         subjects = data["subject"]
 
-        st.subheader("Multi-Parameter Clinical Comparison")
+        # ---------- METRIC CARDS ----------
+        st.subheader("🩺 Clinical Metrics Overview")
 
-        fig, ax = plt.subplots()
+        cols = st.columns(len(parameters))
 
-        x = range(len(parameters))
+        for i, param in enumerate(parameters):
+            avg_value = data[param].mean()
+            cols[i].metric(f"📌 {param}", round(avg_value,2))
 
-        for i, subject in enumerate(subjects):
-            values = data.loc[i, parameters]
-            ax.bar([p + i*0.3 for p in x], values, width=0.3, label=subject)
+        # ---------- TABS ----------
+        tab1, tab2, tab3 = st.tabs(["📊 Graph View", "🕸 Radar Analysis", "🧾 Clinical Report"])
 
-        ax.set_xticks(list(x))
-        ax.set_xticklabels(parameters, rotation=45)
+        # ---------- BAR GRAPH ----------
+        with tab1:
 
-        ax.legend()
+            st.subheader("Multi-Parameter Comparison")
 
-        st.pyplot(fig)
+            fig, ax = plt.subplots()
+
+            x = range(len(parameters))
+
+            for i, subject in enumerate(subjects):
+                values = data.loc[i, parameters]
+                ax.bar([p + i*0.3 for p in x], values, width=0.3, label=subject)
+
+            ax.set_xticks(list(x))
+            ax.set_xticklabels(parameters, rotation=45)
+
+            ax.legend()
+
+            st.pyplot(fig)
+
+        # ---------- RADAR CHART ----------
+        with tab2:
+
+            st.subheader("Radar Gait Analysis")
+
+            angles = np.linspace(0, 2*np.pi, len(parameters), endpoint=False)
+
+            fig = plt.figure()
+            ax = fig.add_subplot(111, polar=True)
+
+            for i, subject in enumerate(subjects):
+                values = data.loc[i, parameters].tolist()
+                values += values[:1]
+                ang = np.concatenate((angles, [angles[0]]))
+
+                ax.plot(ang, values, label=subject)
+
+            ax.set_xticks(angles)
+            ax.set_xticklabels(parameters)
+
+            ax.legend()
+
+            st.pyplot(fig)
+
+        # ---------- CLINICAL REPORT ----------
+        with tab3:
+
+            st.subheader("Automatic Clinical Interpretation")
+
+            for param in parameters:
+                if data[param].iloc[0] > data[param].iloc[1]:
+                    st.write(f"🔍 Subject {subjects.iloc[0]} shows higher {param}.")
+                else:
+                    st.write(f"🔍 Subject {subjects.iloc[1]} shows higher {param}.")
