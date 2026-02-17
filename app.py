@@ -2,31 +2,45 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-st.title("Reverse Walking Analysis Dashboard")
+# ---------- PAGE NAVIGATION ----------
+page = st.sidebar.selectbox(
+    "Navigation",
+    ["Home", "Clinical Dashboard"]
+)
 
-st.header("Upload Gait Data")
+# ---------- HOME PAGE ----------
+if page == "Home":
 
-forward_file = st.file_uploader("Upload Forward Walking Data")
-reverse_file = st.file_uploader("Upload Reverse Walking Data")
+    st.title("Clinical Reverse Walking Analysis System")
 
-if forward_file and reverse_file:
+    st.subheader("Biomechanical and Neuromuscular Gait Analysis")
 
-    forward = pd.read_csv(forward_file)
-    reverse = pd.read_csv(reverse_file)
+    st.write("""
+    This clinical web application allows analysis of forward and reverse walking.
+    It provides visualization of temporal-spatial gait parameters and joint kinematics.
+    """)
 
-    st.subheader("Data Preview")
-    st.write("Forward Walking")
-    st.dataframe(forward)
+    st.success("Click Clinical Dashboard from sidebar to start analysis.")
 
-    st.write("Reverse Walking")
-    st.dataframe(reverse)
+# ---------- DASHBOARD PAGE ----------
+elif page == "Clinical Dashboard":
 
-    st.subheader("Walking Speed Comparison")
+    st.title("Clinical Gait Analysis Dashboard")
 
-    fig, ax = plt.subplots()
+    forward_file = st.file_uploader("Upload Forward Walking Data")
+    reverse_file = st.file_uploader("Upload Reverse Walking Data")
 
-    ax.bar(["Forward","Reverse"],
-           [forward["walking_speed"].mean(),
-            reverse["walking_speed"].mean()])
+    if forward_file and reverse_file:
 
-    st.pyplot(fig)
+        forward = pd.read_csv(forward_file)
+        reverse = pd.read_csv(reverse_file)
+
+        st.subheader("Walking Speed Comparison")
+
+        fig, ax = plt.subplots()
+
+        ax.bar(["Forward","Reverse"],
+               [forward["walking_speed"].mean(),
+                reverse["walking_speed"].mean()])
+
+        st.pyplot(fig)
