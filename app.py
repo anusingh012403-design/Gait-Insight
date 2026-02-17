@@ -40,9 +40,9 @@ elif page == "Clinical Dashboard":
         # PARAMETERS (change names if your CSV has different column names)
         parameters = [
             "walking_speed",
+            "stride_lenght",
             "cadence",
-            "step_length",
-            "stride_time"
+            "hip_rom"
         ]
 
         subjects = data["subject"]
