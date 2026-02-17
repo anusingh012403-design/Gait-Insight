@@ -26,18 +26,17 @@ if page == "Home":
 
 elif page == "Clinical Dashboard":
 
-    st.title("Clinical Gait Parameter Analysis")
+       st.title("Reverse Walking Subject Comparison")
 
-    # Upload files
-    forward_file = st.file_uploader("Upload Forward Walking CSV")
-    reverse_file = st.file_uploader("Upload Reverse Walking CSV")
+    file = st.file_uploader("Upload Reverse Walking CSV")
 
-    if forward_file and reverse_file:
+    if file:
 
-        forward = pd.read_csv(forward_file)
-        reverse = pd.read_csv(reverse_file)
+        data = pd.read_csv(file)
 
-        # PARAMETERS (change according to your CSV columns)
+        st.subheader("Uploaded Data")
+        st.dataframe(data)
+
         parameters = [
             "walking_speed",
             "cadence",
@@ -45,38 +44,18 @@ elif page == "Clinical Dashboard":
             "stride_time"
         ]
 
-        results = []
-
-        for p in parameters:
-            f_val = forward[p].mean()
-            r_val = reverse[p].mean()
-
-            results.append([p, f_val, r_val])
-
-        result_df = pd.DataFrame(
-            results,
-            columns=["Parameter","Forward","Reverse"]
-        )
-
-        # -------- TABLE --------
-
-        st.subheader("Clinical Parameter Table")
-
-        st.dataframe(result_df)
-
-        # -------- GRAPH --------
-
-        st.subheader("Multi Parameter Analysis Graph")
+        subjects = data["subject"]
 
         fig, ax = plt.subplots()
 
         x = range(len(parameters))
 
-        ax.bar(x, result_df["Forward"], label="Forward")
-        ax.bar(x, result_df["Reverse"], label="Reverse")
+        for i, subject in enumerate(subjects):
+            values = data.loc[i, parameters]
+            ax.bar([p + i*0.3 for p in x], values, width=0.3, label=subject)
 
         ax.set_xticks(x)
-        ax.set_xticklabels(parameters, rotation=45)
+        ax.set_xticklabels(parameters)
 
         ax.legend()
 
