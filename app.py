@@ -5,14 +5,14 @@ import plotly.graph_objects as go
 import numpy as np
 from datetime import datetime
 
-# ------------------ PAGE CONFIG ------------------
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Clinical Reverse Walking System",
+    page_title="Clinical Reverse Walking Platform",
     page_icon="🏥",
     layout="wide"
 )
 
-# ------------------ SIDEBAR ------------------
+# ---------------- SIDEBAR ----------------
 st.sidebar.title("🏥 Clinical Gait System")
 
 page = st.sidebar.radio(
@@ -24,38 +24,34 @@ page = st.sidebar.radio(
      "📑 Clinical Report"]
 )
 
-# ------------------ SESSION STORAGE ------------------
+# ---------------- SESSION STATE ----------------
 if "data" not in st.session_state:
     st.session_state.data = None
 
-if "patient_info" not in st.session_state:
-    st.session_state.patient_info = {}
+if "patient" not in st.session_state:
+    st.session_state.patient = {}
 
-# =====================================================
-# 🏠 HOME PAGE
-# =====================================================
+# ===================================================
+# 🏠 HOME
+# ===================================================
 if page == "🏠 Home":
-
-    st.title("🚶 Reverse Walking Clinical Analysis Platform")
 
     col1, col2 = st.columns([1.2,1])
 
     with col1:
+        st.title("🚶 Reverse Walking Clinical Analysis Platform")
+
         st.markdown("""
-        ### Advanced Biomedical Gait Analysis System
+        ### Hospital-grade Biomedical Gait Analysis
 
-        Hospital-grade platform designed for:
+        ✔ Motion capture clinical evaluation  
+        ✔ Reverse walking biomechanical analysis  
+        ✔ Clinical risk prediction  
+        ✔ Automated interpretation  
+        ✔ Research-grade visualization  
 
-        ✅ Reverse walking biomechanics  
-        ✅ Motion capture assessment  
-        ✅ Rehabilitation monitoring  
-        ✅ Clinical risk interpretation  
-        ✅ Automated report generation  
-
-        This system analyzes gait CSV files and generates professional clinical insights.
+        Designed for rehabilitation, biomechanics and clinical research.
         """)
-
-        st.success("Use the sidebar to begin clinical workflow.")
 
     with col2:
         st.image(
@@ -65,82 +61,81 @@ if page == "🏠 Home":
 
     st.markdown("---")
 
-    st.subheader("🚨 Clinical Risk Classification")
+    st.subheader("🚨 Clinical Alert System")
 
-    st.info("""
-    🟢 Green → Normal gait  
-    🟡 Yellow → Moderate deviation  
-    🔴 Red → High clinical concern
-    """)
+    st.success("🟢 GREEN — Normal gait")
+    st.warning("🟡 YELLOW — Moderate deviation")
+    st.error("🔴 RED — High risk clinical gait")
 
-# =====================================================
+# ===================================================
 # 📤 UPLOAD & ANALYSIS
-# =====================================================
+# ===================================================
 elif page == "📤 Upload & Analysis":
 
     st.title("📤 Upload Patient Reverse Walking Data")
 
-    col1, col2, col3 = st.columns(3)
+    col1,col2,col3 = st.columns(3)
 
     with col1:
         name = st.text_input("Patient Name")
 
     with col2:
-        age = st.number_input("Age", 1, 100)
+        age = st.number_input("Age",1,100)
 
     with col3:
-        gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+        gender = st.selectbox("Gender",["Male","Female","Other"])
 
-    uploaded_file = st.file_uploader("Upload Reverse Walking CSV")
+    file = st.file_uploader("Upload CSV")
 
-    if uploaded_file:
+    if file:
 
-        data = pd.read_csv(uploaded_file)
+        data = pd.read_csv(file)
         st.session_state.data = data
-        st.session_state.patient_info = {
-            "Name": name,
-            "Age": age,
-            "Gender": gender,
-            "Date": datetime.now().strftime("%d-%m-%Y")
+
+        st.session_state.patient = {
+            "Name":name,
+            "Age":age,
+            "Gender":gender,
+            "Date":datetime.now().strftime("%d-%m-%Y")
         }
 
-        st.subheader("Uploaded Data Preview")
         st.dataframe(data)
 
-        st.markdown("---")
-        st.subheader("🚨 Clinical Alerts")
-
+        # -------- CLINICAL ALERT --------
         if "walking_speed" in data.columns:
 
             speed = data["walking_speed"].mean()
 
             if speed < 0.7:
-                st.error("🔴 HIGH RISK: Slow gait detected — Clinical attention required")
+                st.error("🔴 HIGH RISK — Slow gait detected")
 
             elif speed < 1.0:
-                st.warning("🟡 MODERATE RISK: Gait below optimal range")
+                st.warning("🟡 Moderate deviation")
 
             else:
-                st.success("🟢 NORMAL: Healthy walking speed detected")
+                st.success("🟢 Normal gait")
 
-# =====================================================
+        # -------- SYMMETRY INDEX --------
+        if "left_step" in data.columns and "right_step" in data.columns:
+
+            sym = abs(data["left_step"].mean() - data["right_step"].mean())
+
+            st.info(f"Symmetry Index: {sym:.3f}")
+
+# ===================================================
 # 📊 VISUALIZATION
-# =====================================================
+# ===================================================
 elif page == "📊 Visualization":
 
-    st.title("📊 Gait Visualization Dashboard")
+    st.title("📊 Clinical Visualization Dashboard")
 
     if st.session_state.data is not None:
 
         data = st.session_state.data
 
-        numeric_cols = data.select_dtypes(include=np.number).columns
+        numeric = data.select_dtypes(include=np.number).columns
 
-        selected = st.multiselect(
-            "Select parameters to visualize",
-            numeric_cols,
-            default=list(numeric_cols)
-        )
+        selected = st.multiselect("Select Parameters",numeric,default=list(numeric))
 
         if selected:
 
@@ -151,95 +146,90 @@ elif page == "📊 Visualization":
                 barmode="group",
                 title="Multi-Parameter Comparison"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig,use_container_width=True)
 
             # Radar Chart
-            st.subheader("🔵 Radar Biomechanical Profile")
-
-            categories = selected
+            st.subheader("Radar Biomechanical Analysis")
 
             fig2 = go.Figure()
 
             for i in range(len(data)):
                 fig2.add_trace(go.Scatterpolar(
-                    r=data.loc[i, selected].values,
-                    theta=categories,
-                    fill='toself',
-                    name=str(data.loc[i, "subject"]) if "subject" in data.columns else f"Subject {i+1}"
+                    r=data.loc[i,selected],
+                    theta=selected,
+                    fill="toself",
+                    name=str(data.loc[i,"subject"]) if "subject" in data.columns else f"S{i+1}"
                 ))
 
-            fig2.update_layout(polar=dict(radialaxis=dict(visible=True)))
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2,use_container_width=True)
 
     else:
-        st.warning("Please upload data first.")
+        st.warning("Upload data first.")
 
-# =====================================================
+# ===================================================
 # 📡 LIVE MONITORING
-# =====================================================
+# ===================================================
 elif page == "📡 Live Monitoring":
 
     st.title("📡 Live Gait Monitoring Simulation")
 
     chart = st.line_chart()
 
-    for i in range(30):
-        new_data = np.random.randn(1,1)
-        chart.add_rows(new_data)
+    for i in range(40):
+        chart.add_rows(np.random.randn(1,1))
 
-    st.success("Live monitoring simulation running...")
+    st.success("Real-time monitoring simulation active.")
 
-# =====================================================
+# ===================================================
 # 📑 CLINICAL REPORT
-# =====================================================
+# ===================================================
 elif page == "📑 Clinical Report":
 
-    st.title("📑 Clinical Report Generator")
+    st.title("📑 Automated Clinical Report")
 
     if st.session_state.data is not None:
 
         data = st.session_state.data
-        info = st.session_state.patient_info
+        patient = st.session_state.patient
 
-        st.subheader("Patient Information")
-        st.write(info)
+        st.subheader("Patient Info")
+        st.write(patient)
 
-        st.subheader("Clinical Interpretation")
-
-        interpretation = ""
+        interpretation=""
 
         if "walking_speed" in data.columns:
+
             speed = data["walking_speed"].mean()
 
-            if speed < 0.7:
-                interpretation += "Patient shows reduced walking speed indicating possible neuromuscular weakness.\n"
-            elif speed < 1.0:
-                interpretation += "Patient gait slightly below optimal range; monitoring recommended.\n"
+            if speed <0.7:
+                interpretation+="Slow walking speed suggests neuromuscular deficit.\n"
+            elif speed<1.0:
+                interpretation+="Moderate gait deviation observed.\n"
             else:
-                interpretation += "Walking speed within normal biomechanical range.\n"
+                interpretation+="Normal walking speed.\n"
 
         if "stride_length" in data.columns:
-            stride = data["stride_length"].mean()
-            interpretation += f"Average stride length recorded: {stride:.2f} m.\n"
+            interpretation+=f"Average stride length: {data['stride_length'].mean():.2f} m.\n"
 
+        st.subheader("Clinical Interpretation")
         st.text(interpretation)
 
-        report_text = f"""
+        report=f"""
         REVERSE WALKING CLINICAL REPORT
         --------------------------------
-        Name: {info.get("Name")}
-        Age: {info.get("Age")}
-        Gender: {info.get("Gender")}
-        Date: {info.get("Date")}
+        Name: {patient.get("Name")}
+        Age: {patient.get("Age")}
+        Gender: {patient.get("Gender")}
+        Date: {patient.get("Date")}
 
-        Clinical Interpretation:
+        Interpretation:
         {interpretation}
         """
 
         st.download_button(
-            label="📥 Download Clinical Report",
-            data=report_text,
-            file_name="Clinical_Report.txt"
+            "📥 Download Report",
+            report,
+            "Clinical_Report.txt"
         )
 
     else:
