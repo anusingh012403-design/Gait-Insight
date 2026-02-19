@@ -1,176 +1,211 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from fpdf import FPDF
+import time
 
-# ---------------- CONFIG ----------------
+# ================= PAGE CONFIG =================
 st.set_page_config(
-    page_title="Reverse Walking Clinical System",
-    page_icon="🏥",
+    page_title="Reverse Walking Clinical Analysis",
+    page_icon="🧠",
     layout="wide"
 )
 
-# ---------------- SIDEBAR ----------------
+# ================= SIDEBAR =================
 st.sidebar.title("🏥 Clinical Gait System")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["🏠 Home", "📤 Upload", "📊 Dashboard", "📄 Clinical Report"]
+    ["🏠 Home",
+     "📤 Upload & Analysis",
+     "📊 Visualization Lab",
+     "📡 Live Monitoring",
+     "📄 Clinical Report"]
 )
 
-# ---------------- SESSION STORAGE ----------------
-if "data" not in st.session_state:
-    st.session_state.data = None
-
-# =====================================================
-# 🏠 HOME
-# =====================================================
+# ================= HOME PAGE =================
 if page == "🏠 Home":
 
-    col1,col2 = st.columns([1.3,1])
+    st.title("🚶 Reverse Walking Clinical Analysis Platform")
+    st.subheader("Advanced Biomedical Gait Assessment System")
 
-    with col1:
-        st.title("🚶 Reverse Walking Clinical Analysis Platform")
+    st.markdown("""
+    Hospital-grade clinical system for:
+    - Reverse walking evaluation  
+    - Joint ROM assessment  
+    - Clinical risk alerts  
+    - Automated reporting  
+    - Rehabilitation monitoring  
+    """)
 
-        st.markdown("""
-        ### Biomedical Gait Analysis System
+    st.image(
+        "https://images.unsplash.com/photo-1581091870627-3f89f0d2d3f9",
+        use_container_width=True
+    )
 
-        Hospital-style clinical application for:
+    st.success("Use sidebar to start clinical workflow.")
 
-        ✅ Reverse walking evaluation  
-        ✅ Joint ROM analysis  
-        ✅ Clinical risk alerts  
-        ✅ Automated reporting  
-        """)
+# ================= UPLOAD PAGE =================
+elif page == "📤 Upload & Analysis":
 
-    with col2:
-        st.image(
-        "https://images.unsplash.com/photo-1580281658629-1a0e9cb9a1c3",
-        use_column_width=True
+    st.title("📤 Upload Patient Reverse Walking Data")
+
+    uploaded_file = st.file_uploader("Upload CSV File")
+
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
+
+        st.subheader("📋 Uploaded Data")
+        st.dataframe(df)
+
+        st.session_state["data"] = df
+
+        # ===== METRIC CARDS =====
+        st.subheader("📈 Key Clinical Metrics")
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric("Walking Speed (m/s)", round(df["walking_speed"].mean(),2))
+        col2.metric("Stride Length (m)", round(df["stride_length"].mean(),2))
+        col3.metric("Cadence (steps/min)", round(df["cadence"].mean(),2))
+
+        col4, col5, col6 = st.columns(3)
+
+        col4.metric("Hip ROM (°)", round(df["hip_rom"].mean(),2))
+        col5.metric("Knee ROM (°)", round(df["knee_rom"].mean(),2))
+        col6.metric("Ankle ROM (°)", round(df["ankle_rom"].mean(),2))
+
+        # ===== CLINICAL ALERT SYSTEM =====
+        st.subheader("🚨 Clinical Risk Alert")
+
+        speed = df["walking_speed"].mean()
+
+        if speed < 0.6:
+            st.error("🔴 High Risk – Abnormal Walking Speed")
+        elif speed < 0.9:
+            st.warning("🟡 Moderate Risk – Borderline Speed")
+        else:
+            st.success("🟢 Normal Walking Speed")
+
+# ================= VISUALIZATION PAGE =================
+elif page == "📊 Visualization Lab":
+
+    st.title("📊 Advanced Gait Visualization")
+
+    if "data" in st.session_state:
+
+        df = st.session_state["data"]
+
+        # Bar Chart
+        st.subheader("📊 Multi-Parameter Comparison")
+
+        fig = px.bar(
+            df,
+            x="subject",
+            y=["walking_speed","stride_length","cadence"],
+            barmode="group"
         )
+        st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("---")
+        # Radar Chart
+        st.subheader("🕸 ROM Radar Analysis")
 
-# =====================================================
-# 📤 UPLOAD PAGE
-# =====================================================
-elif page == "📤 Upload":
+        categories = ["hip_rom","knee_rom","ankle_rom"]
 
-    st.title("📤 Upload Reverse Walking CSV")
+        for i in range(len(df)):
+            fig = go.Figure()
 
-    file = st.file_uploader("Upload CSV")
-
-    if file:
-
-        st.session_state.data = pd.read_csv(file)
-
-        st.success("Data Loaded Successfully")
-
-        st.dataframe(st.session_state.data)
-
-# =====================================================
-# 📊 DASHBOARD
-# =====================================================
-elif page == "📊 Dashboard":
-
-    if st.session_state.data is None:
-
-        st.warning("Upload data first.")
-
-    else:
-
-        data = st.session_state.data
-
-        st.title("📊 Clinical Dashboard")
-
-        # ---------- Clinical Alerts ----------
-        st.subheader("🚨 Clinical Alerts")
-
-        for i in range(len(data)):
-
-            name = data.loc[i,"subject"]
-            speed = data.loc[i,"walking_speed"]
-
-            if speed < 0.7:
-                st.error(f"{name}: 🔴 High Risk — Slow gait detected")
-
-            elif speed < 0.9:
-                st.warning(f"{name}: 🟡 Moderate risk")
-
-            else:
-                st.success(f"{name}: 🟢 Normal gait")
-
-        # ---------- Parameter Selection ----------
-        param = st.selectbox(
-            "Select Parameter",
-            ["walking_speed","stride_length","cadence","hip_rom","knee_rom","ankle_rom"]
-        )
-
-        fig = px.bar(data,x="subject",y=param,color="subject")
-
-        st.plotly_chart(fig,use_container_width=True)
-
-        # ---------- Radar Chart ----------
-        st.subheader("Radar Biomechanical Comparison")
-
-        categories=["walking_speed","stride_length","cadence","hip_rom","knee_rom","ankle_rom"]
-
-        fig2=go.Figure()
-
-        for i in range(len(data)):
-            fig2.add_trace(go.Scatterpolar(
-                r=data.loc[i,categories],
+            fig.add_trace(go.Scatterpolar(
+                r=df.loc[i, categories].values,
                 theta=categories,
-                fill="toself",
-                name=data.loc[i,"subject"]
+                fill='toself',
+                name=df.loc[i,"subject"]
             ))
 
-        fig2.update_layout(polar=dict(radialaxis=dict(visible=True)))
-
-        st.plotly_chart(fig2,use_container_width=True)
-
-# =====================================================
-# 📄 REPORT PAGE
-# =====================================================
-elif page == "📄 Clinical Report":
-
-    if st.session_state.data is None:
-
-        st.warning("Upload data first.")
+            fig.update_layout(polar=dict(radialaxis=dict(visible=True)))
+            st.plotly_chart(fig, use_container_width=True)
 
     else:
+        st.warning("Upload data first.")
 
-        data = st.session_state.data
+# ================= LIVE MONITORING PAGE =================
+elif page == "📡 Live Monitoring":
 
-        st.title("📄 Clinical Report")
+    st.title("📡 Live Gait Monitoring Simulation")
 
-        report_text=""
+    chart = st.line_chart(np.random.randn(10,1))
 
-        for i in range(len(data)):
+    for i in range(50):
+        new_data = np.random.randn(1,1)
+        chart.add_rows(new_data)
+        time.sleep(0.1)
 
-            name=data.loc[i,"subject"]
-            speed=data.loc[i,"walking_speed"]
+    st.success("Live Simulation Complete")
 
-            report_text+=f"\nSubject: {name}\n"
+# ================= CLINICAL REPORT PAGE =================
+elif page == "📄 Clinical Report":
 
-            report_text+=f"Walking Speed: {speed}\n"
-            report_text+=f"Stride Length: {data.loc[i,'stride_length']}\n"
-            report_text+=f"Cadence: {data.loc[i,'cadence']}\n"
-            report_text+=f"Hip ROM: {data.loc[i,'hip_rom']}\n"
-            report_text+=f"Knee ROM: {data.loc[i,'knee_rom']}\n"
-            report_text+=f"Ankle ROM: {data.loc[i,'ankle_rom']}\n"
+    st.title("📄 Automated Clinical Report")
 
-            if speed < 0.7:
-                report_text+="Interpretation: Reduced gait speed.\n"
-            elif speed < 0.9:
-                report_text+="Interpretation: Moderate gait performance.\n"
-            else:
-                report_text+="Interpretation: Normal gait.\n"
+    if "data" in st.session_state:
 
-        st.text_area("Generated Report",report_text,height=400)
+        df = st.session_state["data"]
 
-        st.download_button(
-            "⬇ Download Clinical Report",
-            report_text,
-            "Clinical_Report.txt"
-        )
+        name = st.text_input("Patient Name")
+        age = st.number_input("Age", 1, 100)
+        gender = st.selectbox("Gender", ["Male","Female"])
+        diagnosis = st.text_input("Diagnosis")
+
+        if st.button("Generate Report"):
+
+            speed = df["walking_speed"].mean()
+            stride = df["stride_length"].mean()
+            cadence = df["cadence"].mean()
+            hip = df["hip_rom"].mean()
+            knee = df["knee_rom"].mean()
+            ankle = df["ankle_rom"].mean()
+
+            st.subheader("📋 Clinical Interpretation")
+
+            st.write(f"Patient: {name}")
+            st.write(f"Age: {age}")
+            st.write(f"Gender: {gender}")
+            st.write(f"Diagnosis: {diagnosis}")
+
+            st.write("---- Gait Summary ----")
+
+            st.write(f"Average Walking Speed: {round(speed,2)} m/s")
+            st.write(f"Average Stride Length: {round(stride,2)} m")
+            st.write(f"Average Cadence: {round(cadence,2)} steps/min")
+            st.write(f"Hip ROM: {round(hip,2)}°")
+            st.write(f"Knee ROM: {round(knee,2)}°")
+            st.write(f"Ankle ROM: {round(ankle,2)}°")
+
+            # PDF GENERATION
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+
+            pdf.cell(200,10,"Reverse Walking Clinical Report",ln=True)
+
+            pdf.cell(200,10,f"Name: {name}",ln=True)
+            pdf.cell(200,10,f"Age: {age}",ln=True)
+            pdf.cell(200,10,f"Gender: {gender}",ln=True)
+            pdf.cell(200,10,f"Diagnosis: {diagnosis}",ln=True)
+
+            pdf.cell(200,10,f"Walking Speed: {round(speed,2)} m/s",ln=True)
+            pdf.cell(200,10,f"Stride Length: {round(stride,2)} m",ln=True)
+            pdf.cell(200,10,f"Cadence: {round(cadence,2)} steps/min",ln=True)
+            pdf.cell(200,10,f"Hip ROM: {round(hip,2)}°",ln=True)
+            pdf.cell(200,10,f"Knee ROM: {round(knee,2)}°",ln=True)
+            pdf.cell(200,10,f"Ankle ROM: {round(ankle,2)}°",ln=True)
+
+            pdf.output("clinical_report.pdf")
+
+            with open("clinical_report.pdf","rb") as f:
+                st.download_button("📥 Download PDF Report", f, "clinical_report.pdf")
+
+    else:
+        st.warning("Upload patient data first.")
