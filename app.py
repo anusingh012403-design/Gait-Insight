@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
+import time
 
 # ================= PAGE CONFIG =================
 
@@ -17,7 +19,13 @@ st.sidebar.title("🏥 Clinical Gait System")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["🏠 Home","📂 Upload & Analysis","📊 Visualization Lab","🧪 Clinical Report"]
+    [
+        "🏠 Home",
+        "📂 Upload & Analysis",
+        "📊 Visualization Lab",
+        "📡 Live Monitoring",
+        "🧾 Clinical Report"
+    ]
 )
 
 # ================= HOME =================
@@ -26,35 +34,35 @@ if page == "🏠 Home":
 
     st.title("🚶 Reverse Walking Clinical Analysis Platform")
 
-    st.subheader("Advanced Biomedical Gait Analysis System")
+    st.subheader("Hospital-Level Biomedical Gait Analysis System")
 
     st.markdown("""
-    Hospital-style clinical application for:
-
-    ✅ Reverse walking evaluation  
+    ✅ Reverse walking biomechanics  
     ✅ Joint ROM analysis  
-    ✅ Clinical risk alerts  
-    ✅ Automated reporting
+    ✅ Clinical alerts system  
+    ✅ Advanced visualization  
+    ✅ Live monitoring simulation  
     """)
 
 # ================= UPLOAD =================
 
 elif page == "📂 Upload & Analysis":
 
-    st.header("📂 Upload Patient CSV")
+    st.header("Upload Patient CSV")
 
     file = st.file_uploader("Upload gait CSV")
 
     if file:
         data = pd.read_csv(file)
         st.session_state["data"] = data
+        st.success("Data uploaded successfully")
         st.dataframe(data)
 
 # ================= VISUALIZATION =================
 
 elif page == "📊 Visualization Lab":
 
-    st.header("📊 Advanced Gait Visualization")
+    st.header("Advanced Visualization")
 
     if "data" not in st.session_state:
         st.warning("Upload data first")
@@ -72,23 +80,13 @@ elif page == "📊 Visualization Lab":
             "ankle_rom"
         ]
 
-        # -------- BAR CHART --------
-        st.subheader("Bar Chart Comparison")
+        param = st.selectbox("Select Parameter", parameters)
 
-        param = st.selectbox("Select parameter", parameters)
-
+        # Bar chart
         bar = px.bar(data, x="subject", y=param, color="subject")
         st.plotly_chart(bar, use_container_width=True)
 
-        # -------- LINE CHART --------
-        st.subheader("Line Chart Trend")
-
-        line = px.line(data, x="subject", y=param, markers=True)
-        st.plotly_chart(line, use_container_width=True)
-
-        # -------- RADAR CHART --------
-        st.subheader("Radar Biomechanical Profile")
-
+        # Radar chart
         radar = go.Figure()
 
         for i in range(len(data)):
@@ -101,46 +99,36 @@ elif page == "📊 Visualization Lab":
 
         st.plotly_chart(radar, use_container_width=True)
 
-        # -------- SCATTER --------
-        st.subheader("Scatter Relationship")
-
-        x_param = st.selectbox("X axis", parameters)
-        y_param = st.selectbox("Y axis", parameters, index=1)
-
-        scatter = px.scatter(data, x=x_param, y=y_param, color="subject")
-        st.plotly_chart(scatter, use_container_width=True)
-
-        # -------- BOX PLOT --------
-        st.subheader("Box Plot (Clinical Variability)")
-
-        box = px.box(data, y=parameters)
-        st.plotly_chart(box, use_container_width=True)
-
-        # -------- HEATMAP --------
-        st.subheader("Heatmap Overview")
-
+        # Heatmap
         heat = px.imshow(data[parameters])
         st.plotly_chart(heat, use_container_width=True)
 
-        # -------- CLINICAL ALERTS --------
-        st.subheader("Clinical Alerts")
+# ================= LIVE MONITORING =================
 
-        for i in range(len(data)):
-            name = data.loc[i,"subject"]
-            speed = data.loc[i,"walking_speed"]
+elif page == "📡 Live Monitoring":
 
-            if speed < 0.8:
-                st.error(f"{name}: LOW walking speed")
-            elif speed < 1.1:
-                st.warning(f"{name}: Moderate walking speed")
-            else:
-                st.success(f"{name}: Normal walking speed")
+    st.header("Live Gait Monitoring (Simulation)")
 
-# ================= REPORT =================
+    chart = st.empty()
 
-elif page == "🧪 Clinical Report":
+    x = []
+    y = []
 
-    st.header("🧪 Automated Clinical Report")
+    for i in range(50):
+
+        x.append(i)
+        y.append(np.sin(i/3) + np.random.normal(0,0.1))
+
+        fig = px.line(x=x, y=y, labels={"x":"Time","y":"Gait Signal"})
+        chart.plotly_chart(fig, use_container_width=True)
+
+        time.sleep(0.1)
+
+# ================= CLINICAL REPORT =================
+
+elif page == "🧾 Clinical Report":
+
+    st.header("Automated Clinical Report")
 
     if "data" not in st.session_state:
         st.warning("Upload data first")
@@ -149,35 +137,53 @@ elif page == "🧪 Clinical Report":
 
         data = st.session_state["data"]
 
-        name = st.text_input("Patient Name")
-        age = st.number_input("Age")
-        gender = st.selectbox("Gender",["Male","Female"])
-        diagnosis = st.text_input("Diagnosis")
+        col1,col2 = st.columns(2)
 
-        if st.button("Generate Report"):
+        with col1:
+            name = st.text_input("Patient Name")
+            age = st.number_input("Age")
+        with col2:
+            gender = st.selectbox("Gender",["Male","Female"])
+            diagnosis = st.text_input("Diagnosis")
 
-            st.write(f"Patient: {name}")
+        if st.button("Generate Clinical Report"):
+
+            st.subheader("Patient Information")
+
+            st.write(f"Name: {name}")
             st.write(f"Age: {age}")
             st.write(f"Gender: {gender}")
             st.write(f"Diagnosis: {diagnosis}")
 
+            st.subheader("Gait Parameters")
+
             st.dataframe(data)
 
-            st.subheader("Clinical Interpretation")
+            st.subheader("Clinical Alerts")
 
             for i in range(len(data)):
+
                 subject = data.loc[i,"subject"]
                 speed = data.loc[i,"walking_speed"]
 
                 if speed < 0.8:
-                    st.write(f"{subject}: Reduced gait speed — possible impairment.")
+                    st.error(f"{subject}: LOW walking speed")
+                elif speed < 1.1:
+                    st.warning(f"{subject}: Moderate performance")
                 else:
-                    st.write(f"{subject}: Normal reverse walking performance.")
+                    st.success(f"{subject}: Normal performance")
+
+            st.subheader("Clinical Interpretation")
+
+            st.write("""
+            Reverse walking analysis indicates biomechanical performance.
+            Reduced speed or ROM values may indicate neuromuscular or rehabilitation needs.
+            """)
 
             csv = data.to_csv(index=False)
 
             st.download_button(
-                "Download Report CSV",
+                "Download Clinical Report",
                 csv,
                 "clinical_report.csv",
                 "text/csv"
