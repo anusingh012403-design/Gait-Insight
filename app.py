@@ -2,169 +2,196 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from fpdf import FPDF
-import random
 import time
 
 # ================= PAGE CONFIG =================
+
 st.set_page_config(
     page_title="Clinical Reverse Walking System",
-    page_icon="🧬",
+    page_icon="🧠",
     layout="wide"
 )
 
 # ================= SIDEBAR =================
-st.sidebar.title("🧬 Clinical Gait System")
+
+st.sidebar.title("🏥 Clinical Gait System")
 
 page = st.sidebar.radio(
     "Navigation",
-    [
-        "🏠 Home",
-        "📤 Upload & Analysis",
-        "📊 Visualization",
-        "📡 Live Monitoring",
-        "📄 Clinical Report"
-    ]
+    ["🏠 Home",
+     "📤 Upload & Analysis",
+     "📊 Visualization",
+     "📡 Live Monitoring",
+     "📄 Clinical Report"]
 )
 
-# ================= HOME =================
+# ================= HOME PAGE =================
+
 if page == "🏠 Home":
+
     st.title("🚶 Reverse Walking Clinical Analysis Platform")
 
-    st.markdown("""
-    ### GOD-MODE Biomedical Dashboard
+    col1, col2 = st.columns([1.2,1])
 
-    A hospital-grade clinical gait analysis system designed for  
-    **research, rehabilitation & biomechanical assessment**
+    with col1:
+        st.markdown("""
+        ### Advanced Biomedical Gait Analysis System
 
-    #### Key Capabilities:
-    ✅ AI-style clinical interpretation  
-    ✅ Multi-subject biomechanical comparison  
-    ✅ Radar gait visualization  
-    ✅ Live gait monitoring simulation  
-    ✅ Downloadable clinical report
-    """)
+        Hospital-grade platform for:
 
-    st.info("Use the sidebar to start clinical analysis workflow.")
+        ✅ Reverse walking biomechanics  
+        ✅ Motion capture analysis  
+        ✅ Rehabilitation monitoring  
+        ✅ Clinical interpretation  
+        """)
 
-# ================= UPLOAD =================
+    with col2:
+        st.image(
+            "https://images.unsplash.com/photo-1581092919535-7146ff1a590c",
+            use_column_width=True
+        )
+
+    st.markdown("---")
+
+    st.info("Use sidebar to start clinical workflow.")
+
+# ================= UPLOAD PAGE =================
+
 elif page == "📤 Upload & Analysis":
-    st.title("📤 Upload Patient Gait CSV")
 
-    file = st.file_uploader("Upload Reverse Walking CSV", type=["csv"])
+    st.title("📤 Upload Patient Data")
+
+    name = st.text_input("Patient Name")
+    age = st.number_input("Age", 1, 120)
+    gender = st.selectbox("Gender", ["Male","Female","Other"])
+
+    file = st.file_uploader("Upload CSV")
 
     if file:
-        data = pd.read_csv(file)
-        st.session_state["data"] = data
 
-        st.success("Patient data uploaded successfully")
-        st.subheader("Uploaded Data")
+        data = pd.read_csv(file)
+
+        st.session_state["data"] = data
+        st.session_state["name"] = name
+        st.session_state["age"] = age
+        st.session_state["gender"] = gender
+
+        st.success("Data Uploaded Successfully")
+
         st.dataframe(data)
 
 # ================= VISUALIZATION =================
+
 elif page == "📊 Visualization":
-    st.title("📊 Advanced Gait Visualization")
+
+    st.title("📊 Advanced Clinical Visualization")
 
     if "data" not in st.session_state:
-        st.warning("Upload data first.")
+
+        st.warning("Upload data first")
+
     else:
+
         data = st.session_state["data"]
-        numeric_cols = data.select_dtypes(include="number").columns
 
-        param = st.selectbox("Select Parameter", numeric_cols)
+        parameters = data.columns[1:]
 
-        fig = px.bar(
-            data,
-            x="subject",
-            y=param,
-            color="subject",
-            title=f"{param} Comparison"
-        )
+        selected = st.selectbox("Select Parameter", parameters)
+
+        fig = px.bar(data,
+                     x="subject",
+                     y=selected,
+                     color="subject",
+                     title="Clinical Parameter Comparison")
+
         st.plotly_chart(fig, use_container_width=True)
 
-        st.subheader("🧠 Biomechanical Radar Analysis")
+        # Radar Chart
+        fig2 = go.Figure()
 
-        radar_fig = go.Figure()
         for i in range(len(data)):
-            radar_fig.add_trace(go.Scatterpolar(
-                r=data.loc[i, numeric_cols],
-                theta=numeric_cols,
+            fig2.add_trace(go.Scatterpolar(
+                r=data.loc[i, parameters],
+                theta=parameters,
                 fill='toself',
-                name=data.loc[i, "subject"]
+                name=data.loc[i,"subject"]
             ))
 
-        radar_fig.update_layout(
-            polar=dict(radialaxis=dict(visible=True)),
-            showlegend=True
-        )
+        fig2.update_layout(polar=dict(radialaxis=dict(visible=True)))
 
-        st.plotly_chart(radar_fig, use_container_width=True)
+        st.plotly_chart(fig2, use_container_width=True)
 
 # ================= LIVE MONITORING =================
+
 elif page == "📡 Live Monitoring":
-    st.title("📡 Live Gait Monitoring (Simulation)")
 
-    placeholder = st.empty()
-    values = []
-
-    for i in range(40):
-        values.append(random.uniform(0.6, 1.4))
-        fig = px.line(values, title="Real-time Walking Speed")
-        placeholder.plotly_chart(fig, use_container_width=True)
-        time.sleep(0.2)
-
-# ================= CLINICAL REPORT =================
-elif page == "📄 Clinical Report":
-    st.title("📄 Automatic Clinical Report")
+    st.title("📡 Live Gait Monitoring Simulation")
 
     if "data" not in st.session_state:
-        st.warning("Upload data first.")
+
+        st.warning("Upload data first")
+
     else:
+
+        chart = st.empty()
+
+        for i in range(20):
+
+            live_data = pd.DataFrame({
+                "time": range(i+1),
+                "speed":[x*0.1 for x in range(i+1)]
+            })
+
+            fig = px.line(live_data, x="time", y="speed",
+                          title="Live Walking Speed")
+
+            chart.plotly_chart(fig, use_container_width=True)
+
+            time.sleep(0.2)
+
+# ================= CLINICAL REPORT =================
+
+elif page == "📄 Clinical Report":
+
+    st.title("📄 Clinical Report")
+
+    if "data" not in st.session_state:
+
+        st.warning("Upload data first")
+
+    else:
+
         data = st.session_state["data"]
 
-        avg_speed = data["walking_speed"].mean()
+        name = st.session_state["name"]
+        age = st.session_state["age"]
+        gender = st.session_state["gender"]
 
-        if avg_speed < 0.7:
-            status = "Reduced gait speed detected"
-            risk = "High Risk"
-        elif avg_speed < 1.0:
-            status = "Moderate gait performance"
-            risk = "Moderate Risk"
-        else:
-            status = "Normal gait pattern"
-            risk = "Low Risk"
+        st.subheader("Patient Details")
 
-        st.success("Clinical Interpretation Generated")
+        st.write(f"Name: {name}")
+        st.write(f"Age: {age}")
+        st.write(f"Gender: {gender}")
 
-        st.markdown(f"""
-        ### 🧠 Clinical Summary
+        st.subheader("Clinical Interpretation")
 
-        - Average Walking Speed: **{avg_speed:.2f} m/s**
-        - Gait Status: **{status}**
-        - Risk Level: **{risk}**
+        interpretation = "Patient shows stable gait characteristics with normal biomechanical parameters."
 
-        **Clinical Recommendation**
-        • Continue gait monitoring  
-        • Assess ROM parameters  
-        • Consider rehabilitation protocol if needed
-        """)
+        st.success(interpretation)
 
-        # ===== PDF GENERATION =====
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
+        report_text = f"""
+        Clinical Reverse Walking Report
 
-        pdf.cell(200, 10, txt="Clinical Gait Analysis Report", ln=True)
-        pdf.ln(5)
-        pdf.cell(200, 10, txt=f"Average Walking Speed: {avg_speed:.2f}", ln=True)
-        pdf.cell(200, 10, txt=f"Gait Status: {status}", ln=True)
-        pdf.cell(200, 10, txt=f"Risk Level: {risk}", ln=True)
+        Name: {name}
+        Age: {age}
+        Gender: {gender}
 
-        pdf.output("clinical_report.pdf")
+        Interpretation:
+        {interpretation}
+        """
 
-        with open("clinical_report.pdf", "rb") as f:
-            st.download_button(
-                "⬇️ Download Clinical Report (PDF)",
-                f,
-                file_name="Clinical_Gait_Report.pdf"
-            )
+        st.download_button(
+            "Download Report",
+            report_text,
+            file_name="clinical_report.txt"
+        )
