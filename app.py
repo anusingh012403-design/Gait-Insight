@@ -1,180 +1,131 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import numpy as np
+import plotly.graph_objects as go
 import time
 
 # ================= PAGE CONFIG =================
-
 st.set_page_config(page_title="Clinical Gait System", layout="wide")
 
-# ================= SIDEBAR =================
+# ================= AUTO LOAD CSV =================
+data = pd.read_csv("gait.csv")
 
-st.sidebar.title("🧬 Clinical Gait System")
+# ================= ALERT FUNCTION =================
+def grade(value, good, moderate):
+    if value >= good:
+        return "🟢 Normal"
+    elif value >= moderate:
+        return "🟡 Moderate"
+    else:
+        return "🔴 Risk"
+
+# ================= SIDEBAR =================
+st.sidebar.title("🏥 Clinical Gait System")
 
 page = st.sidebar.radio(
     "Navigation",
-    ["🏠 Home",
-     "📤 Upload & Analysis",
-     "📊 Visualization Lab",
-     "📡 Live Monitoring",
-     "📄 Clinical Report"]
+    ["🏠 Home","📤 Upload & Analysis","📊 Visualization Lab","📡 Live Monitoring","📄 Clinical Report"]
 )
 
 # ================= HOME =================
-
 if page == "🏠 Home":
 
-    st.title("🚶 Reverse Walking Clinical Analysis Platform")
+    col1,col2 = st.columns([2,1])
 
-    st.markdown("""
-    ### Hospital-Level Biomedical Gait Analysis System
+    with col1:
+        st.title("🚶 Reverse Walking Clinical Analysis Platform")
+        st.subheader("Hospital-Level Biomedical Gait Analysis System")
 
-    ✅ Reverse walking biomechanics  
-    ✅ Joint ROM analysis  
-    ✅ EMG activation monitoring  
-    ✅ Clinical alerts system  
-    ✅ Advanced visualization  
-    """)
+        st.success("✔ Reverse walking biomechanics")
+        st.success("✔ Joint ROM analysis")
+        st.success("✔ Clinical alerts system")
+        st.success("✔ Advanced visualization")
+        st.success("✔ Live monitoring simulation")
 
-# ================= CLINICAL THRESHOLD FUNCTION =================
+    with col2:
+        st.image("https://cdn.pixabay.com/photo/2016/03/31/19/56/running-1298750_1280.png")
 
-def grade(value, normal, moderate):
+# ================= UPLOAD & ANALYSIS =================
+elif page == "📤 Upload & Analysis":
 
-    if value >= normal:
-        return 0, "🟢 Normal"
-    elif value >= moderate:
-        return 1, "🟡 Moderate"
-    else:
-        return 2, "🔴 Danger"
+    st.title("Patient Dataset")
 
-# ================= UPLOAD =================
+    st.dataframe(data)
 
-if page == "📤 Upload & Analysis":
+    st.subheader("Clinical Alerts")
 
-    st.header("Upload Gait CSV")
+    for i,row in data.iterrows():
 
-    file = st.file_uploader("Upload CSV")
+        ws = grade(row['walking_speed'],1.2,0.9)
+        cadence = grade(row['cadence'],100,80)
+        hip = grade(row['hip_rom'],40,30)
+        knee = grade(row['knee_rom'],55,45)
+        ankle = grade(row['ankle_rom'],18,12)
+        emg = grade(row['emg_quad'],0.6,0.4)
 
-    if file:
-
-        df = pd.read_csv(file)
-        st.success("Data uploaded successfully")
-        st.dataframe(df)
-
-        st.subheader("🚨 Clinical Alerts")
-
-        for i,row in df.iterrows():
-
-            st.markdown(f"### {row['subject']}")
-
-            s1,g1 = grade(row["walking_speed"],1.1,0.95)
-            s2,g2 = grade(row["hip_rom"],45,35)
-            s3,g3 = grade(row["knee_rom"],60,50)
-            s4,g4 = grade(row["ankle_rom"],22,18)
-            s5,g5 = grade(row["emg_quad"],0.85,0.65)
-
-            score = s1+s2+s3+s4+s5
-
-            st.write("Speed:",g1)
-            st.write("Hip ROM:",g2)
-            st.write("Knee ROM:",g3)
-            st.write("Ankle ROM:",g4)
-            st.write("EMG Quad:",g5)
-
-            if score<=1:
-                st.success("Overall Status: Normal")
-            elif score<=3:
-                st.warning("Overall Status: Moderate Risk")
-            else:
-                st.error("Overall Status: High Risk")
-
-            st.markdown("---")
-
-        st.session_state["data"]=df
-
+        st.write(f"{row['subject']} : {ws} | {cadence} | {hip} | {knee} | {ankle} | {emg}")
 
 # ================= VISUALIZATION =================
+elif page == "📊 Visualization Lab":
 
-if page == "📊 Visualization Lab":
+    st.title("Advanced Gait Visualization")
 
-    st.header("Advanced Visualization")
+    parameters = ['walking_speed','stride_length','cadence','hip_rom','knee_rom','ankle_rom','emg_quad']
 
-    if "data" in st.session_state:
+    # Bar chart
+    fig = px.bar(data,x='subject',y=parameters,barmode='group')
+    st.plotly_chart(fig,use_container_width=True)
 
-        df = st.session_state["data"]
+    # Radar chart
+    st.subheader("Radar Biomechanical Profile")
 
-        parameters = ["walking_speed","stride_length","cadence","hip_rom","knee_rom","ankle_rom","emg_quad"]
+    for i,row in data.iterrows():
+        fig = go.Figure()
+        fig.add_trace(go.Scatterpolar(
+            r=row[parameters],
+            theta=parameters,
+            fill='toself',
+            name=row['subject']
+        ))
+        st.plotly_chart(fig)
 
-        fig = px.bar(df,x="subject",y=parameters,barmode="group")
-        st.plotly_chart(fig,use_container_width=True)
-
-        # Radar chart
-        st.subheader("Radar Chart")
-
-        radar = px.line_polar(df,
-                              r="hip_rom",
-                              theta="subject",
-                              line_close=True)
-
-        st.plotly_chart(radar,use_container_width=True)
-
-        # Scatter analysis
-        st.subheader("Speed vs Cadence")
-
-        scatter = px.scatter(df,x="walking_speed",y="cadence",color="subject",size="emg_quad")
-
-        st.plotly_chart(scatter,use_container_width=True)
-
-    else:
-        st.warning("Upload data first")
-
+    # Scatter comparison
+    fig2 = px.scatter(data,x="walking_speed",y="cadence",color="subject",size="hip_rom")
+    st.plotly_chart(fig2)
 
 # ================= LIVE MONITORING =================
+elif page == "📡 Live Monitoring":
 
-if page == "📡 Live Monitoring":
-
-    st.header("Live Monitoring Simulation")
+    st.title("Live Gait Monitoring Simulation")
 
     chart = st.line_chart()
 
-    data = np.random.randn(50,1)
+    import random
 
-    for i in range(50):
-        chart.add_rows(np.random.randn(1,1))
-        time.sleep(0.05)
-
+    for i in range(30):
+        chart.add_rows([random.random()])
+        time.sleep(0.1)
 
 # ================= CLINICAL REPORT =================
+elif page == "📄 Clinical Report":
 
-if page == "📄 Clinical Report":
+    st.title("Automated Clinical Report")
 
-    st.header("Automated Clinical Report")
+    for i,row in data.iterrows():
 
-    if "data" in st.session_state:
+        st.subheader(f"Patient: {row['subject']}")
 
-        df = st.session_state["data"]
+        interpretation = []
 
-        patient = st.selectbox("Select Patient",df["subject"])
+        if row['walking_speed'] < 1.0:
+            interpretation.append("Reduced gait speed observed")
 
-        row = df[df["subject"]==patient].iloc[0]
+        if row['knee_rom'] < 50:
+            interpretation.append("Possible knee mobility limitation")
 
-        st.write("Walking Speed:",row["walking_speed"])
-        st.write("Stride Length:",row["stride_length"])
-        st.write("Cadence:",row["cadence"])
-        st.write("Hip ROM:",row["hip_rom"])
-        st.write("Knee ROM:",row["knee_rom"])
-        st.write("Ankle ROM:",row["ankle_rom"])
-        st.write("EMG Quad:",row["emg_quad"])
+        if row['emg_quad'] < 0.5:
+            interpretation.append("Reduced muscle activation")
 
-        st.subheader("Clinical Interpretation")
-
-        if row["walking_speed"]<0.95:
-            st.error("Reduced reverse walking speed detected.")
-        elif row["walking_speed"]<1.1:
-            st.warning("Borderline walking speed.")
-        else:
-            st.success("Normal walking speed.")
-
-    else:
-        st.warning("Upload data first")
+        st.write("Clinical Interpretation:")
+        for item in interpretation:
+            st.warning(item)
