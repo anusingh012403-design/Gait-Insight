@@ -1,0 +1,4 @@
+﻿subject,walking_speed,stride_length,cadence,hip_rom,knee_rom,ankle_rom,emg_quad,emg_hamstring,emg_ta,emg_gastro
+akash,1.3,1.1,110,45,60,20,0.8,0.6,0.7,0.9
+jayaram,1.05,1,105,40,55,18,0.7,0.5,0.6,0.8
+austin,1.3,1.2,115,48,62,22,0.9,0.7,0.8,1
